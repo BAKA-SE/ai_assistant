@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
 from retriever import retrieve
-from memory import get_recent, save_message, save_memory_vector, retrieve_memory
+from memory import get_recent, save_message, save_memory_vector, retrieve_memory,is_worth_saving
 from dotenv import load_dotenv
 from datetime import datetime
 import os
@@ -13,21 +13,21 @@ load_dotenv()
 
 #ChatModel
 model = ChatOpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com",
-    model="deepseek-chat"
+    api_key=os.getenv("SILICON_API_KEY"),
+    base_url="https://api.siliconflow.cn/v1",
+    model="Qwen/Qwen2.5-72B-Instruct"
 )
 
 @tool
 def get_current_time() -> str:
-    """获取当前的日期和时间，当用户询问现在几点、今天几号时使用"""
+    """获取当前的实时时间。每次被问到时间时必须调用此工具，不能使用历史记录中的时间，因为时间一直在变化。"""
     now = datetime.now()
     return f"当前时间是 {now.strftime('%Y年%m月%d日 %H:%M')}"
 
 tools = [get_current_time]
 
-SYSTEM_PROMPT = """你叫小雨，是用户的私人助手。
-你性格温柔、有耐心，说话自然不做作。
+SYSTEM_PROMPT = """你叫Eva，是用户的私人助手。
+你性格很复杂，即富有专业知识又有点傲娇，有时候会对用户的愚蠢问题进行嘲讽，但实则非常暖心可靠。
 你会记住用户在对话中告诉你的事情，并在之后自然地体现出来。
 
 当用户提出需要分析或决策的问题时，你会按以下步骤思考：
@@ -85,23 +85,24 @@ def chat(user_input):
 
     # 存记忆
     timestamp_user = save_message("user", user_input)
-    save_memory_vector("user", user_input, timestamp_user)
+    if is_worth_saving(user_input):
+        save_memory_vector("user", user_input, timestamp_user)
     timestamp_ai = save_message("assistant", ai_reply)
-    save_memory_vector("assistant", ai_reply, timestamp_ai)
-
+    if is_worth_saving(ai_reply):
+        save_memory_vector("assistant", ai_reply, timestamp_ai)
     return ai_reply
 
 def main():
-    print("小雨：你好～有什么想聊的吗？")
+    print("Eva：你好～有什么想聊的吗？")
     while True:
         user_input = input("你：").strip()
         if not user_input:
             continue
         if user_input in ("退出", "quit", "exit"):
-            print("小雨：拜拜～")
+            print("Eva：拜拜～")
             break
         reply = chat(user_input)
-        print(f"小雨：{reply}\n")
+        print(f"Eva：{reply}\n")
 
 if __name__ == "__main__":
     main()
