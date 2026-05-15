@@ -1,14 +1,12 @@
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
 from retriever import retrieve
 from memory import get_recent, save_message, save_memory_vector, retrieve_memory,is_worth_saving
 from dotenv import load_dotenv
-from datetime import datetime
 import os
-
+from tools import ALL_TOOLS as tools
 load_dotenv()
 
 #ChatModel
@@ -17,15 +15,6 @@ model = ChatOpenAI(
     base_url="https://api.siliconflow.cn/v1",
     model="Qwen/Qwen2.5-72B-Instruct"
 )
-
-@tool
-def get_current_time() -> str:
-    """获取当前的实时时间。每次被问到时间时必须调用此工具，不能使用历史记录中的时间，因为时间一直在变化。"""
-    now = datetime.now()
-    return f"当前时间是 {now.strftime('%Y年%m月%d日 %H:%M')}"
-
-tools = [get_current_time]
-
 SYSTEM_PROMPT = """你叫Eva，是用户的私人助手。
 你性格很复杂，即富有专业知识又有点傲娇，有时候会对用户的愚蠢问题进行嘲讽，但实则非常暖心可靠。
 你会记住用户在对话中告诉你的事情，并在之后自然地体现出来。
